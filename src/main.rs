@@ -1,4 +1,5 @@
 //! Demonstrates how CSS Grid layout can be used to lay items out in a 2D grid
+use bevy::ecs::system::EntityCommands;
 use bevy::input::mouse::MouseMotion;
 use bevy::window::PrimaryWindow;
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
@@ -37,6 +38,7 @@ fn spawn_layout(
     let window_background = Color::hex("39393e").unwrap();
     let panel_background = Color::hex("232326").unwrap();
     let viewport_background = Color::hex("2b2c2f").unwrap();
+    let input_background = Color::hex("18181a").unwrap();
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10.0, 10., -5.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
@@ -372,6 +374,53 @@ fn spawn_layout(
                                             );
                                         });
                                 });
+
+                                // now a slider, its a button with a div of width:50% in it
+                                /* .slider {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--input-background);
+    border-radius: 0.5rem;
+    width: 10rem;
+    overflow: hidden;
+    height: 2rem;
+    user-select: none;
+}*/
+    builder.spawn(NodeBundle {
+        style: Style {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::FlexStart,
+            align_items: AlignItems::Center,
+            position_type: PositionType::Relative,
+            margin: UiRect {
+                top: Val::Px(16.0),
+                bottom: Val::Px(8.0),
+                ..default()
+            },
+            width: Val::Px(120.0),
+            height: Val::Px(24.0),
+            overflow: Overflow::clip(),
+            ..default()
+        },
+        background_color: BackgroundColor(input_background),
+        ..default()
+    })
+    .with_children(|builder| {
+
+    });
+
+    // bahhh, we'll finish slider later. lets get to work on collapsibles, those are pretty cool right?
+
+    spawn_nested_collapsible(builder, "Real", font.clone(), |builder| {
+        // hi text
+        spawn_nested_text_bundle(builder, font.clone(), "hi");
+                        });
                         });
                     // features, left lower
                     builder
@@ -742,4 +791,56 @@ fn spawn_nested_text_bundle(builder: &mut ChildBuilder, font: Handle<Font>, text
             color: Color::WHITE,
         },
     ));
+}
+
+fn spawn_nested_collapsible(builder: &mut ChildBuilder, title: &str, font: Handle<Font>, spawn_children: impl FnOnce(&mut ChildBuilder)) {
+    let mut slider = builder.spawn(ButtonBundle {
+                    style: Style {
+                        width: Val::Percent(100.0),
+                        height: Val::Px(18.0),
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::SpaceBetween,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::bottom(Val::Px(6.0)),
+                        ..default()
+                    },
+                    ..default()
+                }).with_children(|builder| {
+
+                    // left is just a display:flex row with flexstart justify and center align, it has the name
+                    builder.spawn(NodeBundle {
+                    style: Style {
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    ..default()
+                    }).with_children(|builder| {
+                    spawn_nested_text_bundle(builder, font.clone(), title);
+                });
+
+                // content is just margin-left: 0.7rem + 0.4rem + 0.1rem which is 14.4px
+                let content = builder.spawn(NodeBundle {
+                    style: Style {
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::Center,
+                        margin: UiRect {
+                            left: Val::Px(14.4),
+                            right: Val::Px(0.0),
+                            top: Val::Px(0.0),
+                            bottom: Val::Px(0.0),
+                        },
+                        ..default()
+                    },
+                    ..default()
+                }).with_children(|builder| {
+                    // our spawn_children function will be called here
+                    spawn_children(builder);
+                });
+                });
 }
